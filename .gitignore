@@ -1,0 +1,13 @@
+/target
+Cargo.lock
+
+# Planning documents (local context only)
+AGENT.md
+PROJECT.md
+ARCHITECTURE.md
+DECISIONS.md
+ROADMAP.md
+TECH_DEBT.md
+CONTRIBUTING.md
+htype-2-mvp-spec.md
+MVP-SPEC.md

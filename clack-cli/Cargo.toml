@@ -1,0 +1,22 @@
+[package]
+name = "clack-cli"
+version = "1.0.0"
+edition = "2021"
+description = "CLI driver for the Clack human typing simulator"
+license = "MIT"
+
+[[bin]]
+name = "clack"
+path = "src/main.rs"
+
+[features]
+mangen = ["dep:clap_mangen"]
+
+[dependencies]
+clack-core = { path = "../clack-core" }
+clap = { version = "4", features = ["derive"] }
+ctrlc = "3.5.2"
+clap_mangen = { version = "0.2", optional = true }
+
+[dev-dependencies]
+assert_cmd = "2"
