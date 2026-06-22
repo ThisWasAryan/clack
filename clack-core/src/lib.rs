@@ -188,27 +188,26 @@ impl ClackEngine {
                 let error_type = error::select_error_type(&mut self.rng);
                 let correction_mode = correction::select_correction_mode(&mut self.rng, self.config.correction_rate);
                 
-                let (wrong_chars, correct_chars) = match error_type {
-                    error::ErrorType::Typo => (vec![error::generate_typo(&mut self.rng, c)], vec![c]),
+                let (wrong_chars, correct_chars, chars_consumed) = match error_type {
+                    error::ErrorType::Typo => (vec![error::generate_typo(&mut self.rng, c)], vec![c], 1),
                     error::ErrorType::Transposition => {
                         if i + 1 < chars.len() {
                             let w = vec![chars[i+1], c];
                             let cr = vec![c, chars[i+1]];
-                            i += 1;
-                            (w, cr)
+                            (w, cr, 2)
                         } else {
-                            (vec![error::generate_typo(&mut self.rng, c)], vec![c])
+                            (vec![error::generate_typo(&mut self.rng, c)], vec![c], 1)
                         }
                     },
-                    error::ErrorType::Omission => (vec![], vec![c]),
+                    error::ErrorType::Omission => (vec![], vec![c], 1),
                     error::ErrorType::PanicStuckKey => {
                         let repeats = self.rng.sample_uniform_int(3, 8);
-                        (vec![c; repeats], vec![c])
+                        (vec![c; repeats], vec![c], 1)
                     },
                     error::ErrorType::PanicPrefix => {
                         let mut w = vec![c];
                         w.extend_from_slice(&chars[0..=i]);
-                        (w, vec![c])
+                        (w, vec![c], 1)
                     }
                 };
 
@@ -221,29 +220,24 @@ impl ClackEngine {
                     match mode {
                         correction::CorrectionMode::Immediate => {
                             let correct_bytes: Vec<u8> = correct_chars.iter().map(|&ch| ch as u8).collect();
-                            let events = correction::emit_immediate(&mut self.rng, wrong_chars.len(), &correct_bytes, base_iki as u64);
+                            let events = correction::emit_immediate(&mut self.rng, wrong_chars.len(), &correct_bytes, base_iki as u64, self.state_manager.current_state, self.config.wpm);
                             for mut e in events {
                                 e.state_transition = state_transition.take();
                                 self.event_queue.push_back(e);
                             }
+                            i += chars_consumed - 1;
                         }
                         correction::CorrectionMode::Delayed { chars_to_continue } => {
-                            // The user has typed `wrong_chars.len()` wrong characters.
-                            // Then they type `chars_to_continue` characters.
-                            // Then they backspace all of them.
                             let mut typed_after_error = 0;
                             // Type the continued chars
-                            for &correct in chars.iter().skip(i + 1).take(chars_to_continue) {
+                            for &correct in chars.iter().skip(i + chars_consumed).take(chars_to_continue) {
                                 let iki_final = self.compute_char_iki(target_iki, correct);
                                 self.queue_event(correct as u8, iki_final, state_transition.take());
                                 typed_after_error += 1;
                             }
-                            // i needs to be advanced by typed_after_error so we do not type them again as normal chars
-                            // but wait, delayed correction backspaces them, so they WILL be typed again.
-                            // We shouldn`t advance `i` here.
 
                             let total_backspaces = wrong_chars.len() + typed_after_error;
-                            let events = correction::emit_delayed(&mut self.rng, total_backspaces);
+                            let events = correction::emit_delayed(&mut self.rng, total_backspaces, base_iki as u64, self.state_manager.current_state, self.config.wpm);
                             for mut e in events {
                                 e.state_transition = state_transition.take();
                                 self.event_queue.push_back(e);
@@ -256,14 +250,16 @@ impl ClackEngine {
                             }
                             
                             // Retype the continued chars
-                            for &correct in chars.iter().skip(i + 1).take(typed_after_error) {
+                            for &correct in chars.iter().skip(i + chars_consumed).take(typed_after_error) {
                                 let iki_final = self.compute_char_iki(target_iki, correct);
                                 self.queue_event(correct as u8, iki_final, state_transition.take());
                             }
                             
-                            i += typed_after_error;
+                            i += chars_consumed + typed_after_error - 1;
                         }
                     }
+                } else {
+                    i += chars_consumed - 1;
                 }
             } else {
                 let iki_final = self.compute_char_iki(target_iki, c);

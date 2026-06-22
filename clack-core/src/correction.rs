@@ -2,6 +2,7 @@ use crate::constants::{
     DELAYED_CORRECTION_MAX_CHARS, DELAYED_CORRECTION_MIN_CHARS, IMMEDIATE_CORRECTION_SHARE,
 };
 use crate::rng::ClackRng;
+use crate::BehavioralState;
 
 pub enum CorrectionMode {
     Immediate,
@@ -22,21 +23,38 @@ pub fn select_correction_mode(rng: &mut ClackRng, correction_rate: f64) -> Optio
     }
 }
 
-pub fn emit_immediate(rng: &mut ClackRng, num_backspaces: usize, correct_chars: &[u8], retype_delay: u64) -> Vec<crate::ClackEvent> {
-    use crate::constants::{
-        CORRECTION_PAUSE_MAX_MS, CORRECTION_PAUSE_MIN_MS, CORRECTION_PAUSE_MU_MS,
-        CORRECTION_PAUSE_SIGMA, CHAR_BY_CHAR_MAX_MS, CHAR_BY_CHAR_MIN_MS,
+pub fn get_notice_pause(rng: &mut ClackRng, state: BehavioralState, wpm: f64) -> u64 {
+    let (min_ms, max_ms) = match state {
+        BehavioralState::Flow => (150.0, 250.0),
+        BehavioralState::Focused => (180.0, 300.0),
+        BehavioralState::Thinking => (300.0, 700.0),
+        BehavioralState::Fatigued => (400.0, 1000.0),
+        BehavioralState::Distracted => (500.0, 1000.0),
     };
+    
+    let skill_mod = if wpm < 60.0 {
+        1.15
+    } else if wpm < 120.0 {
+        1.0 + (120.0 - wpm) / 60.0 * 0.15
+    } else if wpm < 180.0 {
+        1.0 - (wpm - 120.0) / 60.0 * 0.10
+    } else {
+        0.90
+    };
+
+    let base = rng.sample_uniform(min_ms, max_ms);
+    (base * skill_mod) as u64
+}
+
+pub fn emit_immediate(rng: &mut ClackRng, num_backspaces: usize, correct_chars: &[u8], retype_delay: u64, state: BehavioralState, wpm: f64) -> Vec<crate::ClackEvent> {
+    use crate::constants::{BACKSPACE_IKI_MULT_MAX, BACKSPACE_IKI_MULT_MIN};
     let mut events = Vec::new();
 
-    let sigma = CORRECTION_PAUSE_SIGMA;
-    let mu = CORRECTION_PAUSE_MU_MS.ln() - (sigma * sigma / 2.0);
-    let notice_pause = rng
-        .sample_log_normal(mu, sigma)
-        .clamp(CORRECTION_PAUSE_MIN_MS, CORRECTION_PAUSE_MAX_MS) as u64;
+    let notice_pause = get_notice_pause(rng, state, wpm);
 
     for i in 0..num_backspaces {
-        let bs_delay = rng.sample_uniform(CHAR_BY_CHAR_MIN_MS, CHAR_BY_CHAR_MAX_MS) as u64;
+        let mult = rng.sample_uniform(BACKSPACE_IKI_MULT_MIN, BACKSPACE_IKI_MULT_MAX);
+        let bs_delay = (retype_delay as f64 * mult) as u64;
         let delay_ms = if i == 0 { notice_pause + bs_delay } else { bs_delay };
         events.push(crate::ClackEvent {
             delay_ms,
@@ -55,24 +73,25 @@ pub fn emit_immediate(rng: &mut ClackRng, num_backspaces: usize, correct_chars: 
 
     events
 }
-pub fn emit_delayed(rng: &mut ClackRng, num_backspaces: usize) -> Vec<crate::ClackEvent> {
+
+pub fn emit_delayed(rng: &mut ClackRng, num_backspaces: usize, base_iki: u64, state: BehavioralState, wpm: f64) -> Vec<crate::ClackEvent> {
     use crate::constants::{
-        NOTICE_PAUSE_MAX_MS, NOTICE_PAUSE_MIN_MS,
         CHAR_BY_CHAR_BACKSPACE_PROB,
-        CHAR_BY_CHAR_MAX_MS, CHAR_BY_CHAR_MIN_MS,
-        HELD_BACKSPACE_MAX_MS, HELD_BACKSPACE_MIN_MS,
+        BACKSPACE_IKI_MULT_MAX, BACKSPACE_IKI_MULT_MIN,
+        HELD_BACKSPACE_IKI_MULT_MAX, HELD_BACKSPACE_IKI_MULT_MIN,
     };
     let mut events = Vec::new();
 
-    let notice_pause = rng.sample_uniform(NOTICE_PAUSE_MIN_MS, NOTICE_PAUSE_MAX_MS) as u64;
+    let notice_pause = get_notice_pause(rng, state, wpm);
     let is_char_by_char = rng.sample_bool(CHAR_BY_CHAR_BACKSPACE_PROB);
 
     for i in 0..num_backspaces {
-        let bs_delay = if is_char_by_char {
-            rng.sample_uniform(CHAR_BY_CHAR_MIN_MS, CHAR_BY_CHAR_MAX_MS) as u64
+        let mult = if is_char_by_char {
+            rng.sample_uniform(BACKSPACE_IKI_MULT_MIN, BACKSPACE_IKI_MULT_MAX)
         } else {
-            rng.sample_uniform(HELD_BACKSPACE_MIN_MS, HELD_BACKSPACE_MAX_MS) as u64
+            rng.sample_uniform(HELD_BACKSPACE_IKI_MULT_MIN, HELD_BACKSPACE_IKI_MULT_MAX)
         };
+        let bs_delay = (base_iki as f64 * mult) as u64;
 
         let total_delay = if i == 0 { notice_pause + bs_delay } else { bs_delay };
 

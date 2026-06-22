@@ -47,7 +47,7 @@ impl StateManager {
             } else {
                 self.current_state = BehavioralState::Focused;
             }
-        } else if is_sentence_boundary && self.current_state != BehavioralState::Fatigued && rng.sample_bool(0.05) {
+        } else if is_sentence_boundary && self.current_state != BehavioralState::Fatigued && self.total_words >= 40 && rng.sample_bool(0.05) {
             self.current_state = BehavioralState::Distracted;
         }
 

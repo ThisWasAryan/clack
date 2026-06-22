@@ -34,23 +34,16 @@ pub const SHIFT_PENALTY_MIN_MS: f64 = 20.0;
 pub const SHIFT_PENALTY_MAX_MS: f64 = 120.0;
 
 // Corrections
-pub const CORRECTION_PAUSE_MU_MS: f64 = 120.0;
-pub const CORRECTION_PAUSE_SIGMA: f64 = 0.35;
-pub const CORRECTION_PAUSE_MIN_MS: f64 = 60.0;
-pub const CORRECTION_PAUSE_MAX_MS: f64 = 350.0;
-
 pub const DELAYED_CORRECTION_MIN_CHARS: usize = 3;
 pub const DELAYED_CORRECTION_MAX_CHARS: usize = 12;
-pub const NOTICE_PAUSE_MIN_MS: f64 = 200.0;
-pub const NOTICE_PAUSE_MAX_MS: f64 = 600.0;
 
 pub const CHAR_BY_CHAR_BACKSPACE_PROB: f64 = 0.65;
-pub const CHAR_BY_CHAR_MIN_MS: f64 = 60.0;
-pub const CHAR_BY_CHAR_MAX_MS: f64 = 130.0;
-pub const HELD_BACKSPACE_MIN_MS: f64 = 15.0;
-pub const HELD_BACKSPACE_MAX_MS: f64 = 35.0;
-
 pub const IMMEDIATE_CORRECTION_SHARE: f64 = 0.70;
+
+pub const BACKSPACE_IKI_MULT_MIN: f64 = 0.6;
+pub const BACKSPACE_IKI_MULT_MAX: f64 = 1.0;
+pub const HELD_BACKSPACE_IKI_MULT_MIN: f64 = 0.3;
+pub const HELD_BACKSPACE_IKI_MULT_MAX: f64 = 0.5;
 
 // Language
 pub const COMMON_WORD_MULTIPLIER: f64 = 0.80;
