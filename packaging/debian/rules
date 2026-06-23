@@ -1,9 +1,0 @@
-#!/usr/bin/make -f
-export PYBUILD_SYSTEM=pyproject
-
-%:
-	dh $@ --with python3 --buildsystem=pybuild
-
-execute_after_dh_auto_install:
-	install -Dm644 org.thiswasaryan.clack.desktop debian/clack-gui/usr/share/applications/org.thiswasaryan.clack.desktop
-	install -Dm644 gui/assets/clack.png debian/clack-gui/usr/share/icons/hicolor/256x256/apps/org.thiswasaryan.clack.png
