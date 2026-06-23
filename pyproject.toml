@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0","setuptools-rust>=1.5.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,7 +9,7 @@ description = "An extremely realistic human typing simulator (GTK4 Frontend)"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "pygobject>=3.40.0", 
+    "pygobject>=3.40.0",
 ]
 
 [project.scripts]
@@ -18,3 +18,8 @@ clack-gui = "gui.__main__:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["gui*"]
+
+[tool.setuptools-rust.bins]
+name = "clack"
+path = "Cargo.toml"
+script = true
