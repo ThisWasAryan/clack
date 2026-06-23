@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clack-gui"
+version = "2.0.0"
+description = "An extremely realistic human typing simulator (GTK4 Frontend)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pygobject>=3.40.0", 
+]
+
+[project.scripts]
+clack-gui = "gui.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gui*"]
