@@ -1,17 +1,18 @@
 # Maintainer: ThisWasAryan <https://github.com/ThisWasAryan>
 pkgname=clack-gui-git
-pkgver=2.0.0.r0
+_pyname=clack-gui
+pkgver=r2619a53
 pkgrel=1
 pkgdesc="A modern typing simulator with advanced humanization"
-arch=('any')
+arch=('x86_64')
 url="https://github.com/lord-of-the-strings/clack"
 license=('MIT')
 depends=('python' 'python-gobject' 'gtk4')
-makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel' 'cargo' 'python-setuptools-rust')
 provides=('clack-gui')
 conflicts=('clack-gui')
 
-source=("clack::git+${url}.git#branch=app")
+source=("clack::git+${url}.git#branch=main")
 sha256sums=('SKIP')
 
 pkgver() {
