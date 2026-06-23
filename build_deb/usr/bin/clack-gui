@@ -1,8 +1,0 @@
-#!/bin/bash
-# Start ydotoold in background if not running
-if ! pgrep ydotoold > /dev/null; then
-    ydotoold &
-    sleep 0.5
-fi
-export PYTHONPATH="/usr/share/clack:$PYTHONPATH"
-exec python3 -m gui "$@"

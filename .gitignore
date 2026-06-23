@@ -16,3 +16,16 @@ MVP-SPEC.md
 gui/docs/*.md
 gui/SETUP.md
 bugfixes.md
+
+# Build directories and artifacts
+/Clack.AppDir/
+/build_deb/
+*.AppImage
+
+# Logs and outputs
+*.log
+raw_output.txt
+
+# Python
+__pycache__/
+*.py[cod]

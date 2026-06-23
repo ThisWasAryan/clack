@@ -1,7 +1,0 @@
-libEGL warning: DRI3 error: Could not get DRI3 device
-libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
-Registered global shortcut: Ctrl+Shift+F12 (Start/Pause), Ctrl+Shift (Speed Boost)
-Testing empty text...
-Testing start click...
-Mock: wait_for_switch called.
-MockRunner: start called with 11 chars.

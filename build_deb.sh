@@ -23,7 +23,7 @@ cat <<EOF > "$BUILD_DIR/DEBIAN/control"
 Package: $PKG_NAME
 Version: $VERSION
 Architecture: $ARCH
-Maintainer: Clack Team <clack@example.com>
+Maintainer: ThisWasAryan
 Depends: xdotool, ydotool, ydotoold, python3-pynput, python3-gi, python3-gi-cairo, gir1.2-gtk-4.0
 Description: Behaviorally realistic human typing simulator
  Clack simulates human typing by injecting keystrokes securely via /dev/uinput.

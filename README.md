@@ -91,15 +91,128 @@ echo "I'm typing really fast but making so many typos!" | clack --wpm 140 --jitt
 cat main.rs | clack --wpm 45 --layout dvorak --code-mode --error-rate 0.01
 ```
 
+### Full CLI Options
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `--wpm` | float | `60.0` | Target average words per minute |
+| `--jitter` | float | `0.15` | IKI (Inter-Key Interval) jitter coefficient (0.0 = none, 1.0 = extreme) |
+| `--error-rate` | float | `0.04` | Base probability of generating an error per character (0.0–1.0) |
+| `--correction-rate` | float | `0.85` | Fraction of generated errors that get corrected |
+| `--no-errors` | flag | off | Disable all error generation |
+| `--seed` | int | (random) | RNG seed for deterministic output. When set, behavior is fully reproducible |
+| `--session-length` | int | `500` | Expected total character count; used to compute warmup/fatigue curves |
+| `--no-fatigue` | flag | off | Disable warmup and fatigue session modelling |
+| `--max-pause` | int | `5000` | Maximum any single pause may be in milliseconds |
+| `--thinking-pause-prob` | float | `0.015` | Probability of a stochastic thinking pause between any two words |
+| `--state-output` | flag | off | Emit behavioral state transitions to stderr |
+| `--code-mode` | flag | off | Slows down for nested brackets and complex identifiers |
+| `--layout` | string | `qwerty` | Target keyboard layout (`qwerty`, `dvorak`, `colemak`, `azerty`) |
+| `--version` | flag | — | Print version string and exit |
+
 ---
 
-## 🏗️ How it Works
+## 🔬 Empirical Foundation & Research
 
-Clack is split into two components to enforce a strict boundary between the simulation logic and the interfaces.
+The default parameters and modeling techniques in Clack are derived from extensive academic research on human keystroke dynamics. Rather than relying on simple sleep delays, every value traces its origins back to research:
 
-- **`clack-core`**: The highly optimized Rust engine library. It maintains a deterministic internal event queue, processes characters via probabilistic distributions (`rand`), manages layout coordinate mapping, and handles the correction state machine. It guarantees reproducibility given the same seed.
-- **`clack-cli`**: The user-facing Rust binary. It parses command-line arguments, initializes the `ClackEngine`, and coordinates real-time delays.
-- **`gui`**: The GTK4 application (Python). It provides a graphical wrapper over the `clack-core` execution, orchestrating window-focus tracking and uinput daemon integration (`ydotool`) securely to simulate system-wide keystrokes across applications, regardless of Wayland or X11 limitations.
+### 1. Inter-Key Interval (IKI) Distribution
+The IKI distribution is **right-skewed**, not Gaussian. We model the delay between keypresses as a **log-normal distribution**, ensuring extreme realism. Fast typists average ~120 ms between keys, while slower typists average ~480 ms, with an absolute physical minimum (hard floor) of 60 ms.
+
+### 2. Error Rates and Type Distribution
+Errors in fast typing naturally occur at a rate of 4%–8%, broken down by precise human fallibility ratios:
+- **Substitution (adjacent key):** ~39%
+- **Insertion (extra character):** ~33%
+- **Omission (missing character):** ~21%
+- **Transposition (swap two adjacent):** ~5% (76% occurring across hands)
+- **Doubling (letter doubled):** ~2%
+
+### 3. Euclidean Distance & Fitts's Law
+Clack computes the physical Euclidean distance between keys on the selected layout (e.g., QWERTY, Dvorak). Transitioning from `A` to `Z` is significantly faster than `A` to `P`. Distances map to specific IKI multipliers. Hand-alternating bigrams (e.g., left hand `E` → right hand `R`) are mathematically enforced to be up to 18% faster than same-hand sequences.
+
+### 4. Cognitive Pauses & Fatigue
+Pauses are separated into specific cognitive events:
+- **Word Boundary Pauses:** Log-normal pause at the end of a word (~80 ms mean).
+- **Sentence Boundary Pauses:** End-of-thought pauses after `.` `?` `!` (~600 ms mean).
+- **Line-start Hesitation:** Brief re-orientation before starting a new line.
+- **Session Fatigue:** Fatigue models gradual IKI multiplier increases and spikes in errors. Lapses ("mental blocks") with very long IKIs begin appearing late in typing sessions.
+
+### Sources
+- Dhakal et al., "Observations on Typing from 136 Million Keystrokes", CHI 2018. URL: https://userinterfaces.aalto.fi/136Mkeystrokes/
+- Clarkson (2005) mini-QWERTY study; CHI 2025 "Simulating Errors in Touchscreen Typing" (arXiv 2502.03560).
+- "On the shape of timings distributions in free-text keystroke dynamics profiles", PMC8606350.
+- "Age Modulates the Effects of Mental Fatigue on Typewriting", Frontiers in Psychology 2018 (PMC6049040).
+- "Dynamics in typewriting performance reflect mental fatigue during real-life office work", PLOS ONE 2020 (PMC7537853).
+
+---
+
+## 🏗️ Architecture & Simulation Flow
+
+Clack ensures *O(1)* per-character processing overhead, meaning it can generate timing events infinitely without memory scaling issues. It is strictly deterministic when given a seed.
+
+### System Data Flow
+```text
+stdin
+  │
+  ▼
+[Reader]
+  │  character stream
+  ▼
+[Tokenizer]  — splits into: regular chars, word boundaries, sentence boundaries, newlines
+  │
+  ▼
+[State Machine]  — current state: FOCUSED / FLOW / THINKING / DISTRACTED / FATIGUED
+  │                modifies: speed multiplier, pause probability, error probability
+  ▼
+[Timing Engine]  — computes per-character delay using:
+  │                 base IKI, jitter, momentum, keyboard model, word/sentence pauses
+  ▼
+[Error Engine]  — stochastically injects errors before emission
+  │
+  ▼
+[Correction Engine]  — decides: immediate correct, delayed correct, uncorrected
+  │
+  ▼
+[Output]  — sleep(delay), write(char) to stdout
+```
+
+### Correction Strategies
+Clack implements multiple dynamic correction strategies.
+- **Immediate Correction (~70%):** A typo is immediately recognized. A realistic backspace delay sequence is emitted (`\x08 \x20 \x08`) followed by the correct characters.
+- **Delayed Correction (~30%):** The typist makes a mistake but continues typing 3-12 characters before "noticing" the error, pausing in confusion, erasing everything up to the mistake, and re-typing the rest of the word correctly.
+
+---
+
+## 📁 File Structure
+
+The repository is highly modularized to separate core simulation logic from platform-dependent I/O operations and graphical user interfaces.
+
+```text
+clack/
+├── Cargo.toml                  # Workspace manifest
+├── clack-core/                 # Highly-optimized Rust Library — 0% I/O, 100% Simulation
+│   └── src/
+│       ├── lib.rs              # Public API: ClackEngine, ClackConfig, ClackEvent
+│       ├── timing.rs           # Log-normal sampling, base IKI logic, bursts
+│       ├── state.rs            # Behavioral state transitions and matrices
+│       ├── keyboard.rs         # Layout grids, Euclidean distance maps, hand-alternation rules
+│       ├── error.rs            # Probabilistic error generation (sub, add, omit, trans, double)
+│       ├── pause.rs            # Sentence, word, and stochastic thinking pauses
+│       ├── session.rs          # Session progress, warmup curve, fatigue curve, lapses
+│       ├── language.rs         # Common word lists, difficult word heuristics
+│       └── correction.rs       # Backspacing, immediate vs delayed correction state machines
+├── clack-cli/                  # Thin Rust CLI driver
+│   └── src/main.rs             # Stdin → Engine → Stdout stream plumbing (100% I/O)
+└── gui/                        # GTK4 Python Frontend
+    ├── __main__.py             # Entrypoint
+    ├── app.py                  # Main GTK Application loop and style contexts
+    ├── window.py               # Main window layout, controllers, and components
+    ├── injector.py             # Secure uinput daemon / ydotoold wrapper for external injection
+    ├── focus_watcher.py        # System-wide window focus tracking
+    ├── clack_runner.py         # Subprocess interaction tying the Rust CLI to the GUI
+    ├── settings.py             # Advanced settings panel UI
+    └── presets.py              # Tuned presets (Hunt&Peck, Casual, Fast) and modifiers
+```
 
 ---
 
