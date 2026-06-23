@@ -1,27 +1,32 @@
 # Maintainer: ThisWasAryan <https://github.com/ThisWasAryan>
-pkgname=clack-gui
-pkgver=2.0.0
+pkgname=clack-gui-git
+pkgver=2.0.0.r0
 pkgrel=1
 pkgdesc="A modern typing simulator with advanced humanization"
 arch=('any')
-url="https://github.com/ThisWasAryan/clack"
+url="https://github.com/lord-of-the-strings/clack"
 license=('MIT')
 depends=('python' 'python-gobject' 'gtk4')
-makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
-# When published to the AUR, the source array will pull the release tarball
-source=("clack-gui-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('SKIP') # Replace with actual hash upon release tag
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+provides=('clack-gui')
+conflicts=('clack-gui')
+
+source=("clack::git+${url}.git#branch=app")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "${srcdir}/clack"
+  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-\)*g/r/;s/-/./g' || echo "2.0.0.r$(git rev-list --count HEAD).g$(git rev-parse --short HEAD)"
+}
 
 build() {
-  cd "clack-${pkgver}"
+  cd "${srcdir}/clack"
   python -m build --wheel --no-isolation
 }
 
 package() {
-  cd "clack-${pkgver}"
+  cd "${srcdir}/clack"
   python -m installer --destdir="$pkgdir" dist/*.whl
-  
-  # Install Desktop Launchers & Icons
   install -Dm644 org.thiswasaryan.clack.desktop "$pkgdir/usr/share/applications/org.thiswasaryan.clack.desktop"
-  install -Dm644 gui/assets/clack.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/org.thiswasaryan.clack.png"
+ # install -Dm644 gui/assets/clack.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/org.thiswasaryan.clack.png"
 }
