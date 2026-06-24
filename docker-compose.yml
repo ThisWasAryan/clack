@@ -1,0 +1,33 @@
+services:
+  ubuntu-test:
+    image: ubuntu:latest
+    container_name: test-ubuntu
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: tail -f /dev/null
+
+  debian-test:
+    image: debian:stable-slim
+    container_name: test-debian
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: tail -f /dev/null
+
+  alpine-test:
+    image: alpine:latest
+    container_name: test-alpine
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: tail -f /dev/null
+
+  fedora-test:
+    image: fedora:latest
+    container_name: test-fedora
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: tail -f /dev/null
+

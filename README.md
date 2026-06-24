@@ -67,6 +67,8 @@ cargo build --release
 To run the GUI from source:
 ```bash
 sudo apt install ydotool python3-gi python3-gi-cairo gir1.2-gtk-4.0
+# Start the ydotool daemon with open socket permissions so your user can access it
+sudo ydotoold --socket-perm 0666 &
 python3 -m gui
 ```
 

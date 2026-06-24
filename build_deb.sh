@@ -71,7 +71,8 @@ cat <<EOF > "$BUILD_DIR/usr/bin/clack-gui"
 #!/bin/bash
 # Start ydotoold in background if not running
 if ! pgrep ydotoold > /dev/null; then
-    ydotoold &
+    # Use --socket-perm 0666 to ensure socket accessibility if run globally or as root.
+    ydotoold --socket-perm 0666 &
     sleep 0.5
 fi
 export PYTHONPATH="/usr/share/clack:\$PYTHONPATH"

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Clack
+Comment=A Modern Typing Simulator with Advanced Humanization and Profiles
+Exec=clack-gui
+Icon=org.thiswasaryan.clack
+Terminal=false
+Type=Application
+Categories=Utility;Development;
+Keywords=typing;simulator;automation;

@@ -53,7 +53,7 @@ def check_dependencies() -> bool:
     if shutil.which('pgrep'):
         result = subprocess.run(['pgrep', 'ydotoold'], capture_output=True)
         if result.returncode != 0:
-            show_error_dialog("ydotoold is not running. Please start it with 'sudo ydotoold &'")
+            show_error_dialog("ydotoold is not running. Please start it with 'sudo ydotoold --socket-perm 0666 &'")
             return False
         
     if not shutil.which('xdotool'):

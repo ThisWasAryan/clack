@@ -42,7 +42,8 @@ HERE="\$(dirname "\$(readlink -f "\${0}")")"
 # Start ydotoold using pkexec if not running
 if ! pgrep ydotoold > /dev/null; then
     # We use pkexec because ydotoold requires root in AppImage without udev rules
-    pkexec ydotoold &
+    # Use --socket-perm 0666 to ensure all users can write to the /tmp/.ydotool_socket regardless of sudo/pkexec.
+    pkexec ydotoold --socket-perm 0666 &
     sleep 0.5
 fi
 
