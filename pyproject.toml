@@ -15,11 +15,11 @@ dependencies = [
 [project.scripts]
 clack-gui = "gui.__main__:main"
 
-[tool.setuptools.packages.find]
+[[tool.setuptools.packages.find]]
 where = ["."]
 include = ["gui*"]
 
 [tool.setuptools-rust.bins]
 name = "clack"
-path = "Cargo.toml"
+path = "clack-cli/Cargo.toml"
 script = true
