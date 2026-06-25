@@ -6,7 +6,14 @@ Clack is an extremely realistic typing simulator that translates static text or 
 
 If you are generating screencasts, terminal recordings, or automated UI demonstrations, regular typing automation tools like `xdotool` or basic sleep scripts look robotic and fake. Clack utilizes probabilistic models to simulate how a real human types, complete with motor-control panics, realistic typing speeds, error rates, and layout-aware key travel distances.
 
+
+
+
+https://github.com/user-attachments/assets/282e4487-f12c-4f81-9dcd-22b81fb3f5a9
+
 ---
+
+
 
 ## ✨ New in V2: Graphical User Interface!
 
@@ -17,6 +24,9 @@ Clack 2.0 introduces a brand new, fully-featured **GTK4 Graphical Interface** fo
 - **No Leftover Mistakes:** A highly-requested toggle that ensures your final text is 100% correct, while still authentically simulating the process of making and fixing mistakes as it types.
 - **Global Shortcuts (WIP):** Pause, resume, or trigger speed-boosts globally using keyboard shortcuts without needing to focus the application window.
 - **Cross-Window Compatibility:** Type directly into any target application window using secure `/dev/uinput` injection.
+
+
+<img width="1070" height="553" alt="ClackGUI1 (Edit)" src="https://github.com/user-attachments/assets/ef53276b-cd4d-4d2e-a660-6824cc682bb5" />
 
 ---
 
